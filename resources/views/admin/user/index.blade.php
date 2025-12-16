@@ -120,6 +120,9 @@
                                         Preferred Location</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Source
                                         of Visit</th>
+                                    <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        Selected QR</th>
                                     {{-- <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pay Status</th> --}}
                                     <th
                                         class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
@@ -167,6 +170,21 @@
                                         <td class="align-middle text-center">
                                             <span
                                                 class="text-secondary text-xs font-weight-bold">{{ $user->source_of_visite ?? 'N/A' }}</span>
+                                        </td>
+                                        <td class="align-middle text-center">
+                                            <span class="text-secondary text-xs font-weight-bold">
+                                                @if($user->qr_code_no && $user->qrCode)
+                                                    <img src="{{ asset('Qr_images/' . $user->qrCode->qr_code_image) }}"
+                                                        alt="Selected QR" style="width:40px; cursor:pointer;"
+                                                        data-bs-toggle="modal" data-bs-target="#qrModal"
+                                                        data-bs-image="{{ asset('Qr_images/' . $user->qrCode->qr_code_image) }}"
+                                                        data-bs-name="{{ $user->name }} - Selected QR">
+                                                    <br>
+                                                    {{ $user->qr_code_no }}
+                                                @else
+                                                    N/A
+                                                @endif
+                                            </span>
                                         </td>
                                         {{-- <td class="align-middle text-center">
                                             <span

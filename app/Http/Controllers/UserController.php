@@ -70,7 +70,8 @@ class UserController extends Controller
      */
     public function create()
     {
-        return view('admin.user.create');
+        $qrCodes = QrCode::all();
+        return view('admin.user.create', compact('qrCodes'));
     }
 
     
@@ -172,7 +173,8 @@ class UserController extends Controller
     public function edit(string $id)
     {
         $user = User::findOrFail($id);
-        return view('admin.user.edit', compact('user'));
+        $qrCodes = QrCode::all();
+        return view('admin.user.edit', compact('user', 'qrCodes'));
     }
 
     /**
@@ -192,7 +194,14 @@ class UserController extends Controller
             'preferred_location' => 'nullable|string|max:255',
             'source_of_visit' => 'nullable|string',
             'payment_status' => 'nullable|string',
+            'qr_code_id' => 'nullable|exists:qr_codes,id',
         ]);
+
+        $qrCodeNo = null;
+        if (!empty($request->qr_code_id)) {
+            $qrCode = QrCode::find($request->qr_code_id);
+            $qrCodeNo = $qrCode ? $qrCode->qr_code_no : null;
+        }
 
         $user->name = $request->name;
         $user->email = $request->email;
@@ -202,6 +211,8 @@ class UserController extends Controller
         $user->prefered_location = $request->preferred_location;
         $user->source_of_visite = $request->source_of_visit;
         $user->payment_status = $request->payment_status;
+        $user->qr_code_id = $request->qr_code_id;
+        $user->qr_code_no = $qrCodeNo;
         $user->save();
 
         return redirect()->route('users.index')->with('success', 'User updated successfully.');

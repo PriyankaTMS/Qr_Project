@@ -27,9 +27,10 @@ class QrCodeController extends Controller
 
         $quantity = $request->quantity;
 
-        // Get the last QR code number to continue from there
         $lastQrCode = QrCode::orderBy('id', 'desc')->first();
-        $startNumber = $lastQrCode ? intval(str_replace('NAREDCO-', '', $lastQrCode->qr_code_no)) + 1 : 1;
+        $startNumber = $lastQrCode
+            ? intval(str_replace('NAREDCO-', '', $lastQrCode->qr_code_no)) + 1
+            : 1;
 
         $folder = public_path('Qr_images');
         if (!file_exists($folder)) {
@@ -37,21 +38,63 @@ class QrCodeController extends Controller
         }
 
         for ($i = 0; $i < $quantity; $i++) {
-            $number = $startNumber + $i;
+
+            $number   = $startNumber + $i;
             $qrCodeNo = 'NAREDCO-' . str_pad($number, 5, '0', STR_PAD_LEFT);
 
-            // Generate QR code with the code number as content
-            $svgQr = QrCodeFacade::format('svg')->size(300)->generate($qrCodeNo);
+            // Generate base QR SVG
+            $qrSvg = QrCodeFacade::format('svg')
+                ->size(300)
+                ->margin(1)
+                ->generate($qrCodeNo);
+
+            /*
+            |--------------------------------------------------------------------------
+            | FIX SVG HEIGHT + VIEWBOX
+            |--------------------------------------------------------------------------
+            */
+            $qrSvg = str_replace(
+                'viewBox="0 0 300 300"',
+                'viewBox="0 0 300 360"',
+                $qrSvg
+            );
+
+            $qrSvg = str_replace(
+                'height="300"',
+                'height="360"',
+                $qrSvg
+            );
+
+            /*
+            |--------------------------------------------------------------------------
+            | ADD TEXT BELOW QR
+            |--------------------------------------------------------------------------
+            */
+            $textSvg = '
+            <text x="150" y="335"
+                  text-anchor="middle"
+                  font-size="18"
+                  font-family="Arial, Helvetica, sans-serif"
+                  font-weight="600"
+                  fill="#000">
+                ' . $qrCodeNo . '
+            </text>
+            ';
+
+            $qrSvg = str_replace('</svg>', $textSvg . '</svg>', $qrSvg);
+
             $fileName = 'qr_' . $qrCodeNo . '.svg';
-            file_put_contents($folder . '/' . $fileName, $svgQr);
+            file_put_contents($folder . '/' . $fileName, $qrSvg);
 
             QrCode::create([
-                'qr_code_no' => $qrCodeNo,
+                'qr_code_no'    => $qrCodeNo,
                 'qr_code_image' => $fileName,
             ]);
         }
 
-        return redirect()->route('qr-codes.index')->with('success', $quantity . ' QR codes generated successfully.');
+        return redirect()
+            ->route('qr-codes.index')
+            ->with('success', $quantity . ' QR codes generated successfully.');
     }
 
     public function show($id)

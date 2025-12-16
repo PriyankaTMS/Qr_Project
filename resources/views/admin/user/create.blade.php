@@ -93,6 +93,22 @@
                                         @enderror
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="qr_code_id">Select QR Code</label>
+                                        <select class="form-control" id="qr_code_id" name="qr_code_id">
+                                            <option value="">Select QR Code (Optional)</option>
+                                            @foreach($qrCodes as $qrCode)
+                                                <option value="{{ $qrCode->id }}" {{ old('qr_code_id') == $qrCode->id ? 'selected' : '' }}>
+                                                    {{ $qrCode->qr_code_no }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('qr_code_id')
+                                            <small class="text-danger">{{ $message }}</small>
+                                        @enderror
+                                    </div>
+                                </div>
                                 {{-- <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="payment_status">Payment Status *</label>
