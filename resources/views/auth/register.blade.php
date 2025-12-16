@@ -151,6 +151,13 @@
                                 required>
                         </div>
 
+                        {{-- QR Code No --}}
+                        <div class="mb-3">
+                            <label class="form-label">QR Code No</label>
+                            <input type="text" name="qr_code_no" placeholder="Enter QR Code No (e.g. NAREDCO-00001)"
+                                class="form-control @error('qr_code_no') is-invalid @enderror" value="{{ old('qr_code_no') }}">
+                        </div>
+
                         {{-- Email --}}
                         {{-- <div class="mb-3">
                             <label class="form-label">Email</label>
@@ -164,26 +171,25 @@
                             <label class="form-label">Property Type</label>
                             <input type="text" name="property_type" placeholder="Enter Property Type"
                                 class="form-control @error('property_type') is-invalid @enderror"
-                                value="{{ old('property_type') }}" required>
+                                value="{{ old('property_type') }}">
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label">Budget</label>
                             <input type="text" name="budget" placeholder="Enter Budget"
-                                class="form-control @error('budget') is-invalid @enderror" value="{{ old('budget') }}"
-                                required>
+                                class="form-control @error('budget') is-invalid @enderror" value="{{ old('budget') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Prefered Location</label>
                             <input type="text" name="prefered_location" placeholder="Enter Prefered Location"
                                 class="form-control @error('prefered_location') is-invalid @enderror"
-                                value="{{ old('prefered_location') }}" required>
+                                value="{{ old('prefered_location') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Source of Visite</label>
                             <input type="text" name="source_of_visite" placeholder="Enter Source of Visite"
                                 class="form-control @error('source_of_visite') is-invalid @enderror"
-                                value="{{ old('source_of_visite') }}" required>
+                                value="{{ old('source_of_visite') }}">
                         </div>
 
                         <button type="submit" class="btn btn-primary">Register Now</button>

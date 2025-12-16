@@ -84,6 +84,7 @@ class UserController extends Controller
             'budget' => 'nullable|string',
             'preferred_location' => 'nullable|string|max:255',
             'source_of_visit' => 'nullable|string',
+            'qr_code_no' => 'nullable|string|max:255',
         ]);
 
         $user = new User;
@@ -94,6 +95,7 @@ class UserController extends Controller
         $user->budget = $request->budget;
         $user->prefered_location = $request->preferred_location;
         $user->source_of_visite = $request->source_of_visit;
+        $user->qr_code_no = $request->qr_code_no;
         $user->save();
 
         // QR Code will store URL
@@ -118,29 +120,29 @@ class UserController extends Controller
       //  $qrCodeValue = url('/user-details/' . $user->id);
       //$qrCodeValue = $user->id;
       // $qrCodeValue = $user->id;
-        $qrCodeValue = "ID: " . $user->id . "\nName: " . $user->name;
+      $qrCodeValue = "ID: " . $user->id . "\nName: " . $user->name;
 
-        $fileName = 'qr_' . $user->id . '.svg';
+      $fileName = 'qr_' . $user->id . '.svg';
 
-        $folder = base_path('users_qr_images');
+      $folder = base_path('users_qr_images');
 
-        if (!file_exists($folder)) {
-            mkdir($folder, 0777, true);
-        }
+      if (!file_exists($folder)) {
+          mkdir($folder, 0777, true);
+      }
 
-        $svgQr = QrCode::format('svg')->size(300)->generate($qrCodeValue);
-        file_put_contents($folder . '/' . $fileName, $svgQr);
+      $svgQr = QrCode::format('svg')->size(300)->generate($qrCodeValue);
+      file_put_contents($folder . '/' . $fileName, $svgQr);
 
-        $user->qr_code = $qrCodeValue;
-        $user->qr_image = $fileName;
-        $user->save();
-
+      $user->qr_code = $qrCodeValue;
+      $user->qr_image = $fileName;
+      $user->save();
 
 
 
 // Finally redirect
         return redirect()->route('users.index')
     ->with('success', 'User created successfully with QR.');
+
 
 
         return redirect()->route('users.index')->with('success', 'User created successfully with QR.');

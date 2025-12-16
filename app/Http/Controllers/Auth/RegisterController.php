@@ -61,6 +61,7 @@ class RegisterController extends Controller
             'budget' => 'nullable|string|max:255',
             'prefered_location' => 'nullable|string|max:255',
             'source_of_visite' => 'nullable|string|max:255',
+            'qr_code_no' => 'nullable|string|max:255',
         ]);
     }
 
@@ -77,6 +78,7 @@ class RegisterController extends Controller
             'budget' => $data['budget'],
             'prefered_location' => $data['prefered_location'],
             'source_of_visite' => $data['source_of_visite'],
+            'qr_code_no' => $data['qr_code_no'] ?? null,
             //'password' => Hash::make('12345678'), // just example
         ]);
     }
