@@ -10,6 +10,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
@@ -93,6 +94,7 @@ class RegisterController extends Controller
             'source_of_visite' => $data['source_of_visite'],
             'qr_code_id' => $data['qr_code_id'] ?? null,
             'qr_code_no' => $qrCodeNo,
+            'otp' => rand(100000, 999999),
             //'password' => Hash::make('12345678'), // just example
         ]);
     }
@@ -149,13 +151,36 @@ class RegisterController extends Controller
         $user->qr_image = $fileName;
         $user->save();
 
-        return redirect()->route('success')
-            ->with('success', 'Registration successful!')
-            ->with('user_id', $user->id);
+        // Send OTP via WhatsApp
+        Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+            'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+            'to' => $user->phone,
+            'template' => '1639453563706347',
+            'otp' => $user->otp
+        ]);
+
+        return redirect()->route('verify-otp', $user->id);
     }
 
+    public function verifyOtp($userId)
+    {
+        $user = User::findOrFail($userId);
+        return view('auth.verify-otp', compact('user'));
+    }
 
-
+    public function verifyOtpPost($userId, Request $request)
+    {
+        $request->validate(['otp' => 'required|digits:6']);
+        $user = User::findOrFail($userId);
+       // dd($user);
+        if ($user && $user->otp == $request->otp) {
+            $user->otp = null;
+            $user->save();
+            return redirect()->route('success');
+        } else {
+            return back()->withErrors(['otp' => 'Invalid OTP']);
+        }
+    }
 
     public function success()
     {

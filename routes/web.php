@@ -14,6 +14,8 @@ Auth::routes();
 
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 Route::get('/success', [RegisterController::class, 'success'])->name('success');
+Route::get('/verify-otp/{userId}', [RegisterController::class, 'verifyOtp'])->name('verify-otp');
+Route::post('/verify-otp/{userId}', [RegisterController::class, 'verifyOtpPost'])->name('verify-otp.post');
 Route::get('/privacypolicy', [RegisterController::class, 'privacypolicy'])->name('privacypolicy');
 Route::get('/users/id-card/{id}', [RegisterController::class, 'downloadIdCard'])->name('users.id-card');
 
