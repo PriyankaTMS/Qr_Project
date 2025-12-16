@@ -122,11 +122,11 @@
                                         of Visit</th>
                                     <th
                                         class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
-                                        Selected QR</th>
-                                    {{-- <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pay Status</th> --}}
-                                    <th
-                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                         QR Image</th>
+                                    {{-- <th class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Pay Status</th> --}}
+                                    {{-- <th
+                                        class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
+                                        QR Image</th> --}}
                                     <th
                                         class="text-center text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">
                                         Actions</th>
@@ -173,7 +173,7 @@
                                         </td>
                                         <td class="align-middle text-center">
                                             <span class="text-secondary text-xs font-weight-bold">
-                                                @if($user->qr_code_no && $user->qrCode)
+                                                @if ($user->qr_code_no && $user->qrCode)
                                                     <img src="{{ asset('Qr_images/' . $user->qrCode->qr_code_image) }}"
                                                         alt="Selected QR" style="width:40px; cursor:pointer;"
                                                         data-bs-toggle="modal" data-bs-target="#qrModal"
@@ -190,7 +190,7 @@
                                             <span
                                                 class="text-secondary text-xs font-weight-bold">{{ $user->payment_status ?? 'N/A' }}</span>
                                         </td> --}}
-                                        <td class="align-middle text-center">
+                                        {{-- <td class="align-middle text-center">
                                             <span class="text-secondary text-xs font-weight-bold">
                                                 <img src="{{ asset('users_qr_images/' . $user->qr_image) }}"
                                                     alt="QR Code" style="width:40px; cursor:pointer;"
@@ -198,7 +198,7 @@
                                                     data-bs-image="{{ asset('users_qr_images/' . $user->qr_image) }}"
                                                     data-bs-name="{{ $user->name }}">
                                             </span>
-                                        </td>
+                                        </td> --}}
 
 
                                         <td class="align-middle">

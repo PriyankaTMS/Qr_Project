@@ -8,6 +8,7 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Http;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 
 
@@ -48,7 +49,7 @@ class UserController extends Controller
         if ($request->filled('payment_status')) {
             $query->where('payment_status', $request->payment_status);
         }
-        
+
         if ($request->filled('register_date')) {
             $query->whereDate('created_at', $request->register_date);
         }
@@ -74,7 +75,7 @@ class UserController extends Controller
         return view('admin.user.create', compact('qrCodes'));
     }
 
-    
+
 
     public function store(Request $request)
     {
@@ -107,54 +108,71 @@ class UserController extends Controller
         $user->qr_code_no = $qrCodeNo;
         $user->save();
 
-        // QR Code will store URL
-        // $qrCodeValue = url('/user-details/' . $user->id);
 
-        // $fileName = 'qr_' . $user->id . '.svg';
+        $qrCodeValue = "ID: " . $user->id . "\nName: " . $user->name;
 
-        // $folder = public_path('users_qr_images');
-        // if (!file_exists($folder)) {
-        //     mkdir($folder, 0777, true);
-        // }
+        $fileName = 'qr_' . $user->id . '.svg';
 
-        // $svgQr = QrCode::format('svg')->size(300)->generate($qrCodeValue);
-        // file_put_contents($folder . '/' . $fileName, $svgQr);
+        $folder = base_path('users_qr_images');
 
-        // $user->qr_code = $qrCodeValue;
-        // $user->qr_image = $fileName;
-        // $user->save();
+        if (!file_exists($folder)) {
+            mkdir($folder, 0777, true);
+        }
 
+        $svgQr = QrCodeFacade::format('svg')->size(300)->generate($qrCodeValue);
+        file_put_contents($folder . '/' . $fileName, $svgQr);
 
+        $user->qr_code = $qrCodeValue;
+        $user->qr_image = $fileName;
+        $user->otp = rand(100000, 999999);
+        $user->save();
 
-      //  $qrCodeValue = url('/user-details/' . $user->id);
-      //$qrCodeValue = $user->id;
-      // $qrCodeValue = $user->id;
-      $qrCodeValue = "ID: " . $user->id . "\nName: " . $user->name;
+        // Send OTP via WhatsApp
+        Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+            'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+            'to' => $user->phone,
+            'template' => '1639453563706347',
+            'otp' => $user->otp
+        ]);
 
-      $fileName = 'qr_' . $user->id . '.svg';
+        // Finally redirect to verify OTP
+        return redirect()->route('admin.verify-otp', $user->id);
+    }
 
-      $folder = base_path('users_qr_images');
+    public function verifyOtp($userId)
+    {
+        $user = User::findOrFail($userId);
+        return view('admin.user.verify-otp', compact('user'));
+    }
 
-      if (!file_exists($folder)) {
-          mkdir($folder, 0777, true);
-      }
+    public function verifyOtpPost($userId, Request $request)
+    {
+        $request->validate(['otp' => 'required|digits:6']);
 
-      $svgQr = QrCodeFacade::format('svg')->size(300)->generate($qrCodeValue);
-      file_put_contents($folder . '/' . $fileName, $svgQr);
+        $user = User::findOrFail($userId);
 
-      $user->qr_code = $qrCodeValue;
-      $user->qr_image = $fileName;
-      $user->save();
+        if ($user->otp == $request->otp) {
+            $user->otp = null;
+            $user->save();
 
+            // Send success WhatsApp message
+            Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+                'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+                'to' => $user->phone,
+                'template' => '1575185220569951',
+                'body' => [
+                    $user->name,
+                    $user->property_type ?? 'NAREDCO Nashik',
+                    now()->format('d-m-Y'),
+                    'QR Code'
+                ],
+                'header' => 'https://demo.techmetworks.com/stallmaillogo.png'
+            ]);
 
-
-// Finally redirect
-        return redirect()->route('users.index')
-    ->with('success', 'User created successfully with QR.');
-
-
-
-        return redirect()->route('users.index')->with('success', 'User created successfully with QR.');
+            return redirect()->route('users.index')->with('success', 'User verified and success message sent.');
+        } else {
+            return back()->withErrors(['otp' => 'Invalid OTP']);
+        }
     }
 
 
@@ -255,7 +273,7 @@ class UserController extends Controller
     // }
 
 
- public function printQR($id)
+    public function printQR($id)
     {
         $user = User::findOrFail($id);
 
@@ -266,8 +284,8 @@ class UserController extends Controller
             'registration_date' => $user->created_at->format('d-m-Y'), // ✅ Added
         ];
 
-         //$customPaper = array(0, 0, 242.64, 153.54);
-          $customPaper = array(0, 0, 288, 676.8);
+        //$customPaper = array(0, 0, 242.64, 153.54);
+        $customPaper = array(0, 0, 288, 676.8);
 
         $pdf = PDF::loadView('admin.user.print', $data)->setPaper('A4', 'portrait');
 
@@ -275,23 +293,23 @@ class UserController extends Controller
     }
 
 
-// public function printQR($id)
-// {
-//     $user = User::findOrFail($id);
+    // public function printQR($id)
+    // {
+    //     $user = User::findOrFail($id);
 
-//     $data = [
-//         'name' => $user->name,
-//         'qr_image' => base_path('users_qr_images/' . $user->qr_image),
-//     ];
+    //     $data = [
+    //         'name' => $user->name,
+    //         'qr_image' => base_path('users_qr_images/' . $user->qr_image),
+    //     ];
 
-//     // Vertical ID Card | 2.125in width x 3.37in height
-//     $customPaper = [0, 0, 153.54, 242.64];
+    //     // Vertical ID Card | 2.125in width x 3.37in height
+    //     $customPaper = [0, 0, 153.54, 242.64];
 
-//     $pdf = Pdf::loadView('admin.user.print', $data)
-//                 ->setPaper($customPaper, 'portrait');
+    //     $pdf = Pdf::loadView('admin.user.print', $data)
+    //                 ->setPaper($customPaper, 'portrait');
 
-//     return $pdf->download($user->name . '_ID_CARD.pdf');
-// }
+    //     return $pdf->download($user->name . '_ID_CARD.pdf');
+    // }
 
 
 
@@ -323,18 +341,18 @@ class UserController extends Controller
     //     return $pdf->download('ID-CARD-' . $user->name . '.pdf');
     // }
 
-     public function downloadIdCard($id)
+    public function downloadIdCard($id)
     {
         $user = User::findOrFail($id);
 
-       // $svgTemplatePath = base_path('Front 01-03.svg');
+        // $svgTemplatePath = base_path('Front 01-03.svg');
         $svgTemplatePath = base_path('Front 01-05.svg');
         $svgContent = file_get_contents($svgTemplatePath);
 
         // Replace Name
-       // $svgContent = str_replace('Omkar Kushare', e($user->name), $svgContent);
+        // $svgContent = str_replace('Omkar Kushare', e($user->name), $svgContent);
         $svgContent = str_replace('OMKAR KUSHARE', e($user->name), $svgContent);
-         $svgContent = str_replace('Techmet IT Solutions', e($user->comp_name), $svgContent);
+        $svgContent = str_replace('Techmet IT Solutions', e($user->comp_name), $svgContent);
         // Get the QR image file path
         $qrImageFilePath = base_path('users_qr_images/' . $user->qr_image);
 
@@ -373,5 +391,4 @@ class UserController extends Controller
             ->header('Content-Type', 'image/svg+xml')
             ->header('Content-Disposition', 'attachment; filename="id-card-' . $user->id . '.svg"');
     }
-
 }

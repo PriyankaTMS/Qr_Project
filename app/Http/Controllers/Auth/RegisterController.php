@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 use Illuminate\Foundation\Auth\RegistersUsers;
+use Illuminate\Support\Facades\Storage;
 
 
 class RegisterController extends Controller
@@ -116,23 +117,7 @@ class RegisterController extends Controller
     {
         \Illuminate\Support\Facades\Auth::logout(); // logout user after registration
 
-        // $qrUrl = url('/user-details/' . $user->id);
-        // $fileName = 'qr_' . $user->id . '.svg';
-        // $folder = public_path('users_qr_images');
-
-        // if (!file_exists($folder)) {
-        //     mkdir($folder, 0777, true);
-        // }
-
-        // $svgQr = QrCode::format('svg')->size(300)->generate($qrUrl);
-        // file_put_contents($folder . '/' . $fileName, $svgQr);
-
-        // $user->qr_code = $qrUrl;
-        // $user->qr_image = $fileName;
-        // $user->save();
-
-        //     $qrCodeValue = $user->id;
-        // $qrCodeValue = $user->id;
+       
         $qrCodeValue = "ID: " . $user->id . "\nName: " . $user->name;
 
         $fileName = 'qr_' . $user->id . '.svg';
@@ -171,16 +156,285 @@ class RegisterController extends Controller
     public function verifyOtpPost($userId, Request $request)
     {
         $request->validate(['otp' => 'required|digits:6']);
-        $user = User::findOrFail($userId);
-       // dd($user);
+        //$user = User::findOrFail($userId);
+        $user = User::with('qrCode')->findOrFail($userId);
+        // dd($user);
         if ($user && $user->otp == $request->otp) {
             $user->otp = null;
             $user->save();
+            // $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
+            // Send success WhatsApp message
+            Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+                'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+                'to' => $user->phone,
+                'template' => '1575185220569951',
+                'body' => [
+                    $user->name,
+                    $user->property_type ?? 'NAREDCO Nashik',
+                    now()->format('d-m-Y'),
+                    'qr'
+                ],
+                'header' => 'https://demo.techmetworks.com/stallmaillogo.png'
+            ]);
+
             return redirect()->route('success');
         } else {
             return back()->withErrors(['otp' => 'Invalid OTP']);
         }
     }
+
+
+
+    // public function verifyOtpPost($userId, Request $request)
+    // {
+    //     $request->validate(['otp' => 'required|digits:6']);
+
+    //     $user = User::with('qrCode')->findOrFail($userId);
+
+    //     if ($user->otp == $request->otp) {
+
+    //         $user->otp = null;
+    //         $user->save();
+
+    //         /* ===============================
+    //        SVG → PNG Conversion
+    //     ================================ */
+
+    //         $svgPath = public_path('storage/qr_svg/' . $user->qrCode->qr_code_image);
+    //         $pngFileName = 'qr_' . $user->id . '.png';
+    //         $pngPath = public_path('storage/qr_png/' . $pngFileName);
+
+    //         // Create folder if not exists
+    //         if (!file_exists(public_path('storage/qr_png'))) {
+    //             mkdir(public_path('storage/qr_png'), 0755, true);
+    //         }
+
+    //         $imagick = new \Imagick();
+    //         $imagick->readImage($svgPath);
+    //         $imagick->setImageFormat("png24");
+    //         $imagick->writeImage($pngPath);
+    //         $imagick->clear();
+    //         $imagick->destroy();
+
+    //         // Public URL
+    //         $qrPngUrl = asset('storage/qr_png/' . $pngFileName);
+
+    //         /* ===============================
+    //        WhatsApp API Call
+    //     ================================ */
+
+    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+    //             'to' => $user->phone,
+    //             'template' => '1575185220569951',
+    //             'body' => [
+    //                 $user->name,
+    //                 $user->property_type ?? 'N/A',
+    //                 now()->format('d-m-Y'),
+    //                 'QR Code'
+    //             ],
+    //             'header' => $qrPngUrl
+    //         ]);
+
+    //         return redirect()->route('success');
+    //     }
+
+    //     return back()->withErrors(['otp' => 'Invalid OTP']);
+    // }
+
+
+
+    // public function verifyOtpPost($userId, Request $request)
+    // {
+    //     $request->validate(['otp' => 'required|digits:6']);
+
+    //     $user = User::with('qrCode')->findOrFail($userId);
+
+    //     if ($user->otp == $request->otp) {
+
+    //         $user->otp = null;
+    //         $user->save();
+
+    //         /* ===============================
+    //        SVG → PNG Conversion
+    //     ================================ */
+
+    //         // SVG file path (from DB)
+    //         $svgPath = public_path('qr_svg/' . $user->qrCode->qr_code_image);
+
+    //         // PNG file name & path
+    //         $pngFileName = 'qr_' . $user->id . '.png';
+    //         $pngPath = public_path('qr_png/' . $pngFileName);
+
+    //         $imagick = new \Imagick();
+    //         $imagick->readImage($svgPath);
+    //         $imagick->setImageFormat('png24');
+    //         $imagick->writeImage($pngPath);
+    //         $imagick->clear();
+    //         $imagick->destroy();
+
+    //         // Public URL for WhatsApp header
+    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
+
+    //         /* ===============================
+    //        WhatsApp API Call
+    //     ================================ */
+
+    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+    //             'to' => $user->phone,
+    //             'template' => '1575185220569951',
+    //             'body' => [
+    //                 $user->name,
+    //                 $user->property_type ?? 'N/A',
+    //                 now()->format('d-m-Y'),
+    //                 'QR Code'
+    //             ],
+    //             'header' => $qrPngUrl
+    //         ]);
+
+    //         return redirect()->route('success');
+    //     }
+
+    //     return back()->withErrors(['otp' => 'Invalid OTP']);
+    // }
+
+    // public function verifyOtpPost($userId, Request $request)
+    // {
+    //     $request->validate(['otp' => 'required|digits:6']);
+
+    //     $user = User::with('qrCode')->findOrFail($userId);
+
+    //     if ($user->otp == $request->otp) {
+
+    //         $user->otp = null;
+    //         $user->save();
+
+    //         /* ===============================
+    //        SVG → PNG Conversion (NO Imagick)
+    //     ================================ */
+
+    //         // $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
+    //         // dd($svgPath);
+    //         // $pngFileName = 'qr_' . $user->id . '.png';
+    //         // $pngPath = public_path('qr_png/' . $pngFileName);
+
+    //         // // SVG → PNG using ImageMagick CLI
+    //         // exec("convert {$svgPath} {$pngPath}");
+
+    //         // // Public URL
+    //         // $qrPngUrl = asset('qr_png/' . $pngFileName);
+
+
+    //         $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
+
+    //         $pngFileName = 'qr_' . $user->id . '.png';
+    //         $pngPath = public_path('qr_png/' . $pngFileName);
+
+    //         // Escape paths (IMPORTANT for Windows)
+    //         $escapedSvg = escapeshellarg($svgPath);
+    //         $escapedPng = escapeshellarg($pngPath);
+
+    //         // SVG → PNG conversion (Windows)
+    //         exec("magick {$escapedSvg} {$escapedPng}", $output, $status);
+
+    //         // Check conversion success
+    //         if ($status !== 0 || !file_exists($pngPath)) {
+    //             return back()->withErrors(['qr' => 'QR SVG to PNG conversion failed']);
+    //         }
+
+    //         // Public URL for WhatsApp
+    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
+    //         dd($qrPngUrl);
+
+    //         /* ===============================
+    //        WhatsApp API Call
+    //     ================================ */
+
+    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+    //             'to' => $user->phone,
+    //             'template' => '1575185220569951',
+    //             'body' => [
+    //                 $user->name,
+    //                 $user->property_type ?? 'N/A',
+    //                 now()->format('d-m-Y'),
+    //                 'QR Code'
+    //             ],
+    //             'header' => $qrPngUrl
+    //         ]);
+
+    //         return redirect()->route('success');
+    //     }
+
+    //     return back()->withErrors(['otp' => 'Invalid OTP']);
+    // }
+
+
+
+    // public function verifyOtpPost($userId, Request $request)
+    // {
+    //     $request->validate(['otp' => 'required|digits:6']);
+
+    //     $user = User::with('qrCode')->findOrFail($userId);
+    //     if ($user->otp == $request->otp) {
+
+    //         dd($user);
+    //         $user->otp = null;
+    //         $user->save();
+
+    //         /* ===============================
+    //        SVG → PNG Conversion (CLI)
+    //     ================================ */
+
+    //         // SVG absolute path
+    //         $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
+
+    //         // PNG name & absolute path
+    //         $pngFileName = 'qr_' . $user->id . '.png';
+    //         $pngPath = public_path('qr_png/' . $pngFileName);
+
+    //         // Safety: escape paths
+    //         $escapedSvg = escapeshellarg($svgPath);
+    //         $escapedPng = escapeshellarg($pngPath);
+
+    //         // Convert SVG → PNG
+    //         exec("convert {$escapedSvg} {$escapedPng}", $output, $status);
+
+    //         // If conversion failed
+    //         if ($status !== 0 || !file_exists($pngPath)) {
+    //             return back()->withErrors(['qr' => 'QR image conversion failed']);
+    //         }
+
+    //         // Public URL for WhatsApp
+    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
+
+    //         /* ===============================
+    //        WhatsApp API Call
+    //     ================================ */
+
+    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
+    //             'to' => $user->phone,
+    //             'template' => '1575185220569951',
+    //             'body' => [
+    //                 $user->name,
+    //                 $user->property_type ?? 'N/A',
+    //                 now()->format('d-m-Y'),
+    //                 'QR Code'
+    //             ],
+    //             'header' => $qrPngUrl
+    //         ]);
+
+    //         return redirect()->route('success');
+    //     }
+
+    //     return back()->withErrors(['otp' => 'Invalid OTP']);
+    // }
+
+
+
+
 
     public function success()
     {

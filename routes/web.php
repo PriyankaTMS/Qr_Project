@@ -31,6 +31,8 @@ Route::post('/user/store', [UserController::class, 'store'])->name('users.store'
 Route::get('/user/edit{id}', [UserController::class, 'edit'])->name('users.edit');
 Route::post('/user/update/{id}', [UserController::class, 'update'])->name('users.update');
 Route::post('/user/delete/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+Route::get('/admin/verify-otp/{userId}', [UserController::class, 'verifyOtp'])->name('admin.verify-otp');
+Route::post('/admin/verify-otp/{userId}', [UserController::class, 'verifyOtpPost'])->name('admin.verify-otp.post');
 
 
 
