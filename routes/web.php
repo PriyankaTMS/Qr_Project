@@ -5,11 +5,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StallController;
+use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\Auth\RegisterController;
 
-Route::get('/', function () {
-    return view('auth.register');
-});
+Route::get('/', [RegisterController::class, 'showRegistrationForm'])->name('home.register');
 
 Auth::routes();
 
@@ -46,4 +45,10 @@ Route::post('/stall/delete/{id}', [StallController::class, 'destroy'])->name('st
    // ->name('stall.visitors.export');
    Route::get('/stall-visitors-export/{stall_id}', [StallController::class, 'exportVisitors'])
     ->name('stall.visitors.export');
+
+   Route::get('/qr-codes', [QrCodeController::class, 'index'])->name('qr-codes.index');
+   Route::get('/qr-codes/create', [QrCodeController::class, 'create'])->name('qr-codes.create');
+   Route::post('/qr-codes', [QrCodeController::class, 'store'])->name('qr-codes.store');
+   Route::get('/qr-codes/{id}', [QrCodeController::class, 'show'])->name('qr-codes.show');
+   Route::delete('/qr-codes/{id}', [QrCodeController::class, 'destroy'])->name('qr-codes.destroy');
 });

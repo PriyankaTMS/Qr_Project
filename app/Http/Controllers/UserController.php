@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\QrCode;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 
 
 
@@ -84,8 +85,14 @@ class UserController extends Controller
             'budget' => 'nullable|string',
             'preferred_location' => 'nullable|string|max:255',
             'source_of_visit' => 'nullable|string',
-            'qr_code_no' => 'nullable|string|max:255',
+            'qr_code_id' => 'nullable|exists:qr_codes,id',
         ]);
+
+        $qrCodeNo = null;
+        if (!empty($request->qr_code_id)) {
+            $qrCode = QrCode::find($request->qr_code_id);
+            $qrCodeNo = $qrCode ? $qrCode->qr_code_no : null;
+        }
 
         $user = new User;
         $user->name = $request->name;
@@ -95,7 +102,8 @@ class UserController extends Controller
         $user->budget = $request->budget;
         $user->prefered_location = $request->preferred_location;
         $user->source_of_visite = $request->source_of_visit;
-        $user->qr_code_no = $request->qr_code_no;
+        $user->qr_code_id = $request->qr_code_id;
+        $user->qr_code_no = $qrCodeNo;
         $user->save();
 
         // QR Code will store URL
@@ -130,7 +138,7 @@ class UserController extends Controller
           mkdir($folder, 0777, true);
       }
 
-      $svgQr = QrCode::format('svg')->size(300)->generate($qrCodeValue);
+      $svgQr = QrCodeFacade::format('svg')->size(300)->generate($qrCodeValue);
       file_put_contents($folder . '/' . $fileName, $svgQr);
 
       $user->qr_code = $qrCodeValue;

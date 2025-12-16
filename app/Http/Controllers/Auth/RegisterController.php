@@ -4,12 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use Auth;
 use App\Models\User;
+use App\Models\QrCode;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 use Illuminate\Foundation\Auth\RegistersUsers;
 
 
@@ -45,6 +46,12 @@ class RegisterController extends Controller
         $this->middleware('guest');
     }
 
+    public function showRegistrationForm()
+    {
+        $qrCodes = QrCode::all();
+        return view('auth.register', compact('qrCodes'));
+    }
+
     /**
      * Get a validator for an incoming registration request.
      *
@@ -61,7 +68,7 @@ class RegisterController extends Controller
             'budget' => 'nullable|string|max:255',
             'prefered_location' => 'nullable|string|max:255',
             'source_of_visite' => 'nullable|string|max:255',
-            'qr_code_no' => 'nullable|string|max:255',
+            'qr_code_id' => 'nullable|exists:qr_codes,id',
         ]);
     }
 
@@ -70,6 +77,12 @@ class RegisterController extends Controller
     protected function create(array $data)
     {
         // dd($data);
+        $qrCodeNo = null;
+        if (!empty($data['qr_code_id'])) {
+            $qrCode = QrCode::find($data['qr_code_id']);
+            $qrCodeNo = $qrCode ? $qrCode->qr_code_no : null;
+        }
+
         return User::create([
             'name' => $data['name'],
             //  'email' => $data['email'],
@@ -78,7 +91,8 @@ class RegisterController extends Controller
             'budget' => $data['budget'],
             'prefered_location' => $data['prefered_location'],
             'source_of_visite' => $data['source_of_visite'],
-            'qr_code_no' => $data['qr_code_no'] ?? null,
+            'qr_code_id' => $data['qr_code_id'] ?? null,
+            'qr_code_no' => $qrCodeNo,
             //'password' => Hash::make('12345678'), // just example
         ]);
     }
@@ -128,7 +142,7 @@ class RegisterController extends Controller
             mkdir($folder, 0777, true);
         }
 
-        $svgQr = QrCode::format('svg')->size(300)->generate($qrCodeValue);
+        $svgQr = QrCodeFacade::format('svg')->size(300)->generate($qrCodeValue);
         file_put_contents($folder . '/' . $fileName, $svgQr);
 
         $user->qr_code = $qrCodeValue;

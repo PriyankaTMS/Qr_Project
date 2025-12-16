@@ -112,7 +112,7 @@
                     </div>
 
 
-                    <form method="POST" action="{{ route('register') }}">
+                    <form method="POST" action="/register">
                         @csrf
                         <div class="text-center mb-3">
                             <span class="header-title text-center" style="color:#393185;">Exhibition Visitor
@@ -151,11 +151,20 @@
                                 required>
                         </div>
 
-                        {{-- QR Code No --}}
+                        {{-- QR Code Selection --}}
                         <div class="mb-3">
-                            <label class="form-label">QR Code No</label>
-                            <input type="text" name="qr_code_no" placeholder="Enter QR Code No (e.g. NAREDCO-00001)"
-                                class="form-control @error('qr_code_no') is-invalid @enderror" value="{{ old('qr_code_no') }}">
+                            <label class="form-label">Select QR Code</label>
+                            <select name="qr_code_id" class="form-control @error('qr_code_id') is-invalid @enderror">
+                                <option value="">Select QR Code (Optional)</option>
+                                @foreach($qrCodes as $qrCode)
+                                    <option value="{{ $qrCode->id }}" {{ old('qr_code_id') == $qrCode->id ? 'selected' : '' }}>
+                                        {{ $qrCode->qr_code_no }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('qr_code_id')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
                         {{-- Email --}}
