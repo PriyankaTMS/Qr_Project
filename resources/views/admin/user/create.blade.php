@@ -46,11 +46,18 @@
                                         <label for="property_type">Property Type</label>
                                         <select class="form-control" id="property_type" name="property_type">
                                             <option value="">Select Property Type</option>
-                                            <option value="apartment" {{ old('property_type') == 'apartment' ? 'selected' : '' }}>Apartment</option>
-                                            <option value="house" {{ old('property_type') == 'house' ? 'selected' : '' }}>House</option>
-                                            <option value="villa" {{ old('property_type') == 'villa' ? 'selected' : '' }}>Villa</option>
-                                            <option value="plot" {{ old('property_type') == 'plot' ? 'selected' : '' }}>Plot</option>
-                                            <option value="commercial" {{ old('property_type') == 'commercial' ? 'selected' : '' }}>Commercial</option>
+                                            <option value="apartment"
+                                                {{ old('property_type') == 'apartment' ? 'selected' : '' }}>Apartment
+                                            </option>
+                                            <option value="house" {{ old('property_type') == 'house' ? 'selected' : '' }}>
+                                                House</option>
+                                            <option value="villa" {{ old('property_type') == 'villa' ? 'selected' : '' }}>
+                                                Villa</option>
+                                            <option value="plot" {{ old('property_type') == 'plot' ? 'selected' : '' }}>
+                                                Plot</option>
+                                            <option value="commercial"
+                                                {{ old('property_type') == 'commercial' ? 'selected' : '' }}>Commercial
+                                            </option>
                                         </select>
                                         @error('property_type')
                                             <small class="text-danger">{{ $message }}</small>
@@ -70,8 +77,8 @@
                                 <div class="col-md-6">
                                     <div class="form-group">
                                         <label for="preferred_location">Preferred Location</label>
-                                        <input type="text" class="form-control" id="preferred_location" name="preferred_location"
-                                            value="{{ old('preferred_location') }}">
+                                        <input type="text" class="form-control" id="preferred_location"
+                                            name="preferred_location" value="{{ old('preferred_location') }}">
                                         @error('preferred_location')
                                             <small class="text-danger">{{ $message }}</small>
                                         @enderror
@@ -82,11 +89,21 @@
                                         <label for="source_of_visit">Source of Visit</label>
                                         <select class="form-control" id="source_of_visit" name="source_of_visit">
                                             <option value="">Select Source</option>
-                                            <option value="social_media" {{ old('source_of_visit') == 'social_media' ? 'selected' : '' }}>Social Media</option>
-                                            <option value="website" {{ old('source_of_visit') == 'website' ? 'selected' : '' }}>Website</option>
-                                            <option value="referral" {{ old('source_of_visit') == 'referral' ? 'selected' : '' }}>Referral</option>
-                                            <option value="advertisement" {{ old('source_of_visit') == 'advertisement' ? 'selected' : '' }}>Advertisement</option>
-                                            <option value="walk_in" {{ old('source_of_visit') == 'walk_in' ? 'selected' : '' }}>Walk-in</option>
+                                            <option value="social_media"
+                                                {{ old('source_of_visit') == 'social_media' ? 'selected' : '' }}>Social
+                                                Media</option>
+                                            <option value="website"
+                                                {{ old('source_of_visit') == 'website' ? 'selected' : '' }}>Website
+                                            </option>
+                                            <option value="referral"
+                                                {{ old('source_of_visit') == 'referral' ? 'selected' : '' }}>Referral
+                                            </option>
+                                            <option value="advertisement"
+                                                {{ old('source_of_visit') == 'advertisement' ? 'selected' : '' }}>
+                                                Advertisement</option>
+                                            <option value="walk_in"
+                                                {{ old('source_of_visit') == 'walk_in' ? 'selected' : '' }}>Walk-in
+                                            </option>
                                         </select>
                                         @error('source_of_visit')
                                             <small class="text-danger">{{ $message }}</small>
@@ -95,11 +112,12 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="qr_code_id">Select QR Code</label>
-                                        <select class="form-control" id="qr_code_id" name="qr_code_id">
-                                            <option value="">Select QR Code (Optional)</option>
-                                            @foreach($qrCodes as $qrCode)
-                                                <option value="{{ $qrCode->id }}" {{ old('qr_code_id') == $qrCode->id ? 'selected' : '' }}>
+                                        <label for="qr_code_id">Select QR Code *</label>
+                                        <select class="form-control" id="qr_code_id" name="qr_code_id" required>
+                                            <option value="">Select QR Code </option>
+                                            @foreach ($qrCodes as $qrCode)
+                                                <option value="{{ $qrCode->id }}"
+                                                    {{ old('qr_code_id') == $qrCode->id ? 'selected' : '' }}>
                                                     {{ $qrCode->qr_code_no }}
                                                 </option>
                                             @endforeach
@@ -132,4 +150,29 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('scripts')
+<style>
+.select2-selection.select2-selection--single {
+    height: 40px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+}
+.select2-selection__rendered {
+    line-height: 24px !important;
+    padding-left: 12px !important;
+}
+.select2-selection__arrow {
+    height: 38px !important;
+}
+</style>
+<script>
+$(document).ready(function() {
+    $('#qr_code_id').select2({
+        placeholder: 'Search and select QR Code',
+        allowClear: true
+    });
+});
+</script>
 @endsection

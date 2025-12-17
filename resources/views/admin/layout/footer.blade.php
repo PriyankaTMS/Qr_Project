@@ -20,6 +20,10 @@
     </footer>
     </div>
     </main>
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <div class="fixed-plugin">
         <a class="fixed-plugin-button text-dark position-fixed px-3 py-2">
             <i class="fa fa-cog py-2"> </i>
@@ -303,6 +307,7 @@
     <script async defer src="https://buttons.github.io/buttons.js"></script>
     <!-- Control Center for Soft Dashboard: parallax effects, scripts for the example pages etc -->
     <script src="{{ asset('admin/assets/js/soft-ui-dashboard.min.js?v=1.1.0') }}"></script>
+    @yield('scripts')
     </body>
 
     </html>

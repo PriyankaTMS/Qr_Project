@@ -1,6 +1,9 @@
 @extends('layouts.app')
 
 @section('content')
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
     <style>
         body {
             background: #f5f5f5;
@@ -154,7 +157,7 @@
                         {{-- QR Code Selection --}}
                         <div class="mb-3">
                             <label class="form-label">Select QR Code</label>
-                            <select name="qr_code_id" class="form-control @error('qr_code_id') is-invalid @enderror">
+                            <select name="qr_code_id" id="qr_code_id" class="form-control @error('qr_code_id') is-invalid @enderror">
                                 <option value="">Select QR Code (Optional)</option>
                                 @foreach($qrCodes as $qrCode)
                                     <option value="{{ $qrCode->id }}" {{ old('qr_code_id') == $qrCode->id ? 'selected' : '' }}>
@@ -230,4 +233,33 @@
             </div>
         </div>
     </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <script>
+    $(document).ready(function() {
+        $('#qr_code_id').select2({
+            placeholder: 'Search and select QR Code',
+            allowClear: true
+        });
+    });
+    </script>
+
+    <style>
+    .select2-selection.select2-selection--single {
+        height: 40px !important;
+        padding-top: 8px !important;
+        padding-bottom: 8px !important;
+    }
+    .select2-selection__rendered {
+        line-height: 24px !important;
+        padding-left: 12px !important;
+    }
+    .select2-selection__arrow {
+        height: 38px !important;
+    }
+    </style>
 @endsection

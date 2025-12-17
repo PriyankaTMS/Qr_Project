@@ -10,7 +10,7 @@
      <link rel="icon" type="image/png" href="{{ asset('stallmaillogo.png') }}">
 
    <title>
-       Aima Index 2025
+       NAREDCO Nashik 2025
     </title>
 
     <!-- Fonts -->

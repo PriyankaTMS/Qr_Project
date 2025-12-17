@@ -73,7 +73,8 @@ class UserController extends Controller
      */
     public function create()
     {
-        $qrCodes = QrCode::all();
+        //$qrCodes = QrCode::all();
+        $qrCodes = QrCode::whereDoesntHave('user')->get();
         return view('admin.user.create', compact('qrCodes'));
     }
 

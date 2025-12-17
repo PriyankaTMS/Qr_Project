@@ -52,7 +52,7 @@ class RegisterController extends Controller
 
     public function showRegistrationForm()
     {
-        $qrCodes = QrCode::all();
+        $qrCodes = QrCode::whereDoesntHave('user')->get();
         return view('auth.register', compact('qrCodes'));
     }
 

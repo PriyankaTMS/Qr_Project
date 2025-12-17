@@ -5,10 +5,10 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="apple-touch-icon" sizes="76x76" href="../assets/img/apple-icon.png">
-   
-     <link rel="icon" type="image/png" href="{{ asset('stallmaillogo.png') }}">
+
+    <link rel="icon" type="image/png" href="{{ asset('stallmaillogo.png') }}">
     <title>
-       Aima Index 2025
+        NAREDCO Nashik 2025
     </title>
     <!--     Fonts and icons     -->
     <link href="https://fonts.googleapis.com/css?family=Inter:300,400,500,600,700,800" rel="stylesheet" />
@@ -19,6 +19,8 @@
     <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
     <!-- CSS Files -->
     <link id="pagestyle" href="{{ asset('admin/assets/css/soft-ui-dashboard.css?v=1.1.0') }}" rel="stylesheet" />
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <!-- Nepcha Analytics (nepcha.com) -->
     <!-- Nepcha is a easy-to-use web analytics. No cookies and fully compliant with GDPR, CCPA and PECR. -->
     <script defer data-site="YOUR_DOMAIN_HERE" src="https://api.nepcha.com/js/nepcha-analytics.js"></script>
@@ -45,7 +47,7 @@
         <hr class="horizontal dark mt-4">
         <div class="collapse navbar-collapse  w-auto " id="sidenav-collapse-main">
             <ul class="navbar-nav">
-               <li class="nav-item">
+                <li class="nav-item">
                     <a class=" nav-link {{ Request::is('home') ? 'active' : '' }}" href="{{ route('home') }}">
                         <div
                             class="icon icon-shape icon-sm shadow border-radius-md bg-white text-center me-2 d-flex align-items-center justify-content-center">
@@ -72,7 +74,7 @@
                         <span class="nav-link-text ms-1">Dashboard</span>
                     </a>
                 </li>
-               
+
 
                 <li class="nav-item">
                     <a class="nav-link {{ Request::is('users*') ? 'active' : '' }} " href="{{ route('users.index') }}">
@@ -211,11 +213,11 @@
                         </li>
                         <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
                             <a href="javascript:;" class="nav-link text-body p-0" id="iconNavbarSidenav">
-                                 <div class="sidenav-toggler-inner">
+                                <div class="sidenav-toggler-inner">
                                     <i class="sidenav-toggler-line"></i>
                                     <i class="sidenav-toggler-line"></i>
                                     <i class="sidenav-toggler-line"></i>
-                                </div>  
+                                </div>
                             </a>
                         </li>
                         <!--<li class="nav-item px-3 d-flex align-items-center">-->
