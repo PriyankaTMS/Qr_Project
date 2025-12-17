@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\Http;
 use SimpleSoftwareIO\QrCode\Facades\QrCode as QrCodeFacade;
 use Illuminate\Foundation\Auth\RegistersUsers;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use App\Services\QrSvgToPngService;
 
 
 class RegisterController extends Controller
@@ -156,15 +158,45 @@ class RegisterController extends Controller
     public function verifyOtpPost($userId, Request $request)
     {
         $request->validate(['otp' => 'required|digits:6']);
-        //$user = User::findOrFail($userId);
         $user = User::with('qrCode')->findOrFail($userId);
-        // dd($user);
+
+        Log::info('RegisterController.verifyOtpPost: Starting OTP verification', [
+            'user_id' => $userId,
+            'user_phone' => $user->phone,
+            'submitted_otp' => $request->otp,
+            'stored_otp' => $user->otp
+        ]);
+
         if ($user && $user->otp == $request->otp) {
+            Log::info('RegisterController.verifyOtpPost: OTP verified successfully, clearing OTP and preparing WhatsApp message', [
+                'user_id' => $user->id,
+                'user_name' => $user->name
+            ]);
+
             $user->otp = null;
             $user->save();
-            // $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
+
+            // Generate PNG QR for WhatsApp delivery
+            $svgPath = base_path('users_qr_images/' . $user->qr_image);
+            $qrPayload = $user->qr_code_no; // Same payload used for SVG generation
+
+            Log::info('RegisterController.verifyOtpPost: Starting PNG generation for WhatsApp', [
+                'svg_path' => $svgPath,
+                'qr_payload' => $qrPayload,
+                'svg_exists' => file_exists($svgPath)
+            ]);
+
+            $pngPath = QrSvgToPngService::convert($svgPath, $qrPayload);
+            $pngUrl = asset('qr_images_png/' . basename($pngPath));
+
+            Log::info('RegisterController.verifyOtpPost: PNG conversion completed, preparing WhatsApp API call', [
+                'png_path' => $pngPath,
+                'png_url' => $pngUrl,
+                'png_exists' => file_exists($pngPath)
+            ]);
+
             // Send success WhatsApp message
-            Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
+            $whatsappData = [
                 'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
                 'to' => $user->phone,
                 'template' => '1575185220569951',
@@ -174,265 +206,60 @@ class RegisterController extends Controller
                     now()->format('d-m-Y'),
                     'qr'
                 ],
-                'header' => 'https://demo.techmetworks.com/stallmaillogo.png'
+                'header' => $pngUrl
+            ];
+
+            Log::info('RegisterController.verifyOtpPost: Preparing WhatsApp API request', [
+                'api_endpoint' => 'https://app.aiwati.com/api/whatsapp-base/send_template',
+                'request_data' => $whatsappData,
+                'phone_format_check' => preg_match('/^[0-9]{10,15}$/', $user->phone) ? 'valid' : 'invalid',
+                'png_url_accessible' => $this->checkUrlAccessible($pngUrl)
             ]);
+
+            Log::info('RegisterController.verifyOtpPost: Sending WhatsApp success message', [
+                'user_id' => $user->id,
+                'phone' => $user->phone,
+                'template' => '1575185220569951',
+                'header_image_url' => $pngUrl,
+                'message_body' => 'Hi ' . $user->name . ', The NAREDCO Nashik Expo is happening on ' . now()->format('d-m-Y') . '. We\'re excited to have you with us! Please visit the venue on the scheduled date. Show the attached QR at the entry point. This is a system-generated notification.'
+            ]);
+
+            $response = Http::timeout(30)->get('https://app.aiwati.com/api/whatsapp-base/send_template', $whatsappData);
+
+            $responseData = $response->json();
+            Log::info('RegisterController.verifyOtpPost: WhatsApp API response received', [
+                'status_code' => $response->status(),
+                'response_body' => $response->body(),
+                'response_json' => $responseData,
+                'success' => $response->successful(),
+                'message_id' => $responseData['response']['messages'][0]['id'] ?? null,
+                'message_status' => $responseData['response']['messages'][0]['message_status'] ?? null,
+                'wa_id' => $responseData['response']['contacts'][0]['wa_id'] ?? null,
+                'error_details' => $responseData['error'] ?? null
+            ]);
+
+            if (!$response->successful()) {
+                Log::error('RegisterController.verifyOtpPost: WhatsApp API call failed', [
+                    'error_code' => $response->status(),
+                    'error_body' => $response->body(),
+                    'troubleshooting' => [
+                        'check_api_key' => 'Verify API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK is valid',
+                        'check_phone' => 'Phone should be 10-15 digits, may need country code',
+                        'check_template' => 'Template 1575185220569951 should be approved',
+                        'check_png_url' => 'PNG URL should be publicly accessible: ' . $pngUrl
+                    ]
+                ]);
+            }
 
             return redirect()->route('success');
         } else {
+            Log::warning('RegisterController.verifyOtpPost: OTP verification failed', [
+                'user_id' => $user->id,
+                'submitted_otp' => $request->otp
+            ]);
             return back()->withErrors(['otp' => 'Invalid OTP']);
         }
     }
-
-
-
-    // public function verifyOtpPost($userId, Request $request)
-    // {
-    //     $request->validate(['otp' => 'required|digits:6']);
-
-    //     $user = User::with('qrCode')->findOrFail($userId);
-
-    //     if ($user->otp == $request->otp) {
-
-    //         $user->otp = null;
-    //         $user->save();
-
-    //         /* ===============================
-    //        SVG → PNG Conversion
-    //     ================================ */
-
-    //         $svgPath = public_path('storage/qr_svg/' . $user->qrCode->qr_code_image);
-    //         $pngFileName = 'qr_' . $user->id . '.png';
-    //         $pngPath = public_path('storage/qr_png/' . $pngFileName);
-
-    //         // Create folder if not exists
-    //         if (!file_exists(public_path('storage/qr_png'))) {
-    //             mkdir(public_path('storage/qr_png'), 0755, true);
-    //         }
-
-    //         $imagick = new \Imagick();
-    //         $imagick->readImage($svgPath);
-    //         $imagick->setImageFormat("png24");
-    //         $imagick->writeImage($pngPath);
-    //         $imagick->clear();
-    //         $imagick->destroy();
-
-    //         // Public URL
-    //         $qrPngUrl = asset('storage/qr_png/' . $pngFileName);
-
-    //         /* ===============================
-    //        WhatsApp API Call
-    //     ================================ */
-
-    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
-    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
-    //             'to' => $user->phone,
-    //             'template' => '1575185220569951',
-    //             'body' => [
-    //                 $user->name,
-    //                 $user->property_type ?? 'N/A',
-    //                 now()->format('d-m-Y'),
-    //                 'QR Code'
-    //             ],
-    //             'header' => $qrPngUrl
-    //         ]);
-
-    //         return redirect()->route('success');
-    //     }
-
-    //     return back()->withErrors(['otp' => 'Invalid OTP']);
-    // }
-
-
-
-    // public function verifyOtpPost($userId, Request $request)
-    // {
-    //     $request->validate(['otp' => 'required|digits:6']);
-
-    //     $user = User::with('qrCode')->findOrFail($userId);
-
-    //     if ($user->otp == $request->otp) {
-
-    //         $user->otp = null;
-    //         $user->save();
-
-    //         /* ===============================
-    //        SVG → PNG Conversion
-    //     ================================ */
-
-    //         // SVG file path (from DB)
-    //         $svgPath = public_path('qr_svg/' . $user->qrCode->qr_code_image);
-
-    //         // PNG file name & path
-    //         $pngFileName = 'qr_' . $user->id . '.png';
-    //         $pngPath = public_path('qr_png/' . $pngFileName);
-
-    //         $imagick = new \Imagick();
-    //         $imagick->readImage($svgPath);
-    //         $imagick->setImageFormat('png24');
-    //         $imagick->writeImage($pngPath);
-    //         $imagick->clear();
-    //         $imagick->destroy();
-
-    //         // Public URL for WhatsApp header
-    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
-
-    //         /* ===============================
-    //        WhatsApp API Call
-    //     ================================ */
-
-    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
-    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
-    //             'to' => $user->phone,
-    //             'template' => '1575185220569951',
-    //             'body' => [
-    //                 $user->name,
-    //                 $user->property_type ?? 'N/A',
-    //                 now()->format('d-m-Y'),
-    //                 'QR Code'
-    //             ],
-    //             'header' => $qrPngUrl
-    //         ]);
-
-    //         return redirect()->route('success');
-    //     }
-
-    //     return back()->withErrors(['otp' => 'Invalid OTP']);
-    // }
-
-    // public function verifyOtpPost($userId, Request $request)
-    // {
-    //     $request->validate(['otp' => 'required|digits:6']);
-
-    //     $user = User::with('qrCode')->findOrFail($userId);
-
-    //     if ($user->otp == $request->otp) {
-
-    //         $user->otp = null;
-    //         $user->save();
-
-    //         /* ===============================
-    //        SVG → PNG Conversion (NO Imagick)
-    //     ================================ */
-
-    //         // $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
-    //         // dd($svgPath);
-    //         // $pngFileName = 'qr_' . $user->id . '.png';
-    //         // $pngPath = public_path('qr_png/' . $pngFileName);
-
-    //         // // SVG → PNG using ImageMagick CLI
-    //         // exec("convert {$svgPath} {$pngPath}");
-
-    //         // // Public URL
-    //         // $qrPngUrl = asset('qr_png/' . $pngFileName);
-
-
-    //         $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
-
-    //         $pngFileName = 'qr_' . $user->id . '.png';
-    //         $pngPath = public_path('qr_png/' . $pngFileName);
-
-    //         // Escape paths (IMPORTANT for Windows)
-    //         $escapedSvg = escapeshellarg($svgPath);
-    //         $escapedPng = escapeshellarg($pngPath);
-
-    //         // SVG → PNG conversion (Windows)
-    //         exec("magick {$escapedSvg} {$escapedPng}", $output, $status);
-
-    //         // Check conversion success
-    //         if ($status !== 0 || !file_exists($pngPath)) {
-    //             return back()->withErrors(['qr' => 'QR SVG to PNG conversion failed']);
-    //         }
-
-    //         // Public URL for WhatsApp
-    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
-    //         dd($qrPngUrl);
-
-    //         /* ===============================
-    //        WhatsApp API Call
-    //     ================================ */
-
-    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
-    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
-    //             'to' => $user->phone,
-    //             'template' => '1575185220569951',
-    //             'body' => [
-    //                 $user->name,
-    //                 $user->property_type ?? 'N/A',
-    //                 now()->format('d-m-Y'),
-    //                 'QR Code'
-    //             ],
-    //             'header' => $qrPngUrl
-    //         ]);
-
-    //         return redirect()->route('success');
-    //     }
-
-    //     return back()->withErrors(['otp' => 'Invalid OTP']);
-    // }
-
-
-
-    // public function verifyOtpPost($userId, Request $request)
-    // {
-    //     $request->validate(['otp' => 'required|digits:6']);
-
-    //     $user = User::with('qrCode')->findOrFail($userId);
-    //     if ($user->otp == $request->otp) {
-
-    //         dd($user);
-    //         $user->otp = null;
-    //         $user->save();
-
-    //         /* ===============================
-    //        SVG → PNG Conversion (CLI)
-    //     ================================ */
-
-    //         // SVG absolute path
-    //         $svgPath = public_path('Qr_images/' . $user->qrCode->qr_code_image);
-
-    //         // PNG name & absolute path
-    //         $pngFileName = 'qr_' . $user->id . '.png';
-    //         $pngPath = public_path('qr_png/' . $pngFileName);
-
-    //         // Safety: escape paths
-    //         $escapedSvg = escapeshellarg($svgPath);
-    //         $escapedPng = escapeshellarg($pngPath);
-
-    //         // Convert SVG → PNG
-    //         exec("convert {$escapedSvg} {$escapedPng}", $output, $status);
-
-    //         // If conversion failed
-    //         if ($status !== 0 || !file_exists($pngPath)) {
-    //             return back()->withErrors(['qr' => 'QR image conversion failed']);
-    //         }
-
-    //         // Public URL for WhatsApp
-    //         $qrPngUrl = asset('qr_png/' . $pngFileName);
-
-    //         /* ===============================
-    //        WhatsApp API Call
-    //     ================================ */
-
-    //         Http::get('https://app.aiwati.com/api/whatsapp-base/send_template', [
-    //             'api_key' => 'API1765878328TRwtkJpv3zjqjugIN1v00tMN3EK',
-    //             'to' => $user->phone,
-    //             'template' => '1575185220569951',
-    //             'body' => [
-    //                 $user->name,
-    //                 $user->property_type ?? 'N/A',
-    //                 now()->format('d-m-Y'),
-    //                 'QR Code'
-    //             ],
-    //             'header' => $qrPngUrl
-    //         ]);
-
-    //         return redirect()->route('success');
-    //     }
-
-    //     return back()->withErrors(['otp' => 'Invalid OTP']);
-    // }
-
-
 
 
 
@@ -445,5 +272,18 @@ class RegisterController extends Controller
     public function privacypolicy()
     {
         return view('auth.privacypolicy');
+    }
+
+    /**
+     * Check if a URL is accessible
+     */
+    private function checkUrlAccessible(string $url): bool
+    {
+        try {
+            $response = Http::timeout(5)->head($url);
+            return $response->successful();
+        } catch (\Exception $e) {
+            return false;
+        }
     }
 }
